@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".StatisticsActivity"/>
+<!--        <activity android:name=".StatisticsActivity"/>-->
     </application>
 
 </manifest>

@@ -2,9 +2,9 @@ package com.example.phonecallloganalyzer;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,17 +13,36 @@ import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ProgressBar; // Import ProgressBar
-
+import android.widget.ProgressBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.github.mikephil.charting.charts.HorizontalBarChart;
+import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
+import com.github.mikephil.charting.data.PieEntry;
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+import com.github.mikephil.charting.formatter.PercentFormatter;
+import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.mikephil.charting.utils.ColorTemplate;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -31,57 +50,78 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE = 100;
 
+    // UI Views
     private RecyclerView recyclerView;
+    private RecyclerView statsRecyclerView; // New RecyclerView for the stats list
+    private Button btnShowLogs, btnShowStats;
+    private ProgressBar progressBar;
+    private View slidingSelector;
+    private NestedScrollView statsContainer;
+    private HorizontalBarChart barChart;
+    private PieChart pieChart;
+
+    // Data
     private List<CallLogItem> callLogList = new ArrayList<>();
     private CallLogAdapter adapter;
     private HashMap<String, ContactStats> statsMap = new HashMap<>();
-
-    private Button btnShowLogs, btnShowStats;
-    private ProgressBar progressBar; // Add a ProgressBar for visual feedback
-
-    private View slidingSelector;
-
-    // Executor for background tasks
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    // Handler to post results back to the main thread
-    private final Handler handler = new Handler(Looper.getMainLooper());
-
     private int incomingCalls = 0, outgoingCalls = 0, missedCalls = 0;
+    private boolean isDataLoaded = false;
+
+    // Threading
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main); // Make sure you have a ProgressBar with id 'progressBar' in your layout
+        setContentView(R.layout.activity_main);
 
-        // Initialize views
+        // Initialize all views
         recyclerView = findViewById(R.id.recyclerView);
+        statsRecyclerView = findViewById(R.id.statsRecyclerView); // Find the new RecyclerView
         btnShowLogs = findViewById(R.id.showLogsButton);
         btnShowStats = findViewById(R.id.showStatsButton);
         progressBar = findViewById(R.id.progressBar);
         slidingSelector = findViewById(R.id.slidingSelector);
-
+        statsContainer = findViewById(R.id.statsContainer);
+        barChart = findViewById(R.id.barChart);
+        pieChart = findViewById(R.id.pieChart);
 
         // Setup RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new CallLogAdapter(callLogList);
         recyclerView.setAdapter(adapter);
 
-        btnShowLogs.setOnClickListener(v -> {
-            animateSlider(btnShowLogs);
-            checkPermissionsAndLoad();
-        });
-        btnShowStats.setOnClickListener(v ->{
-            animateSlider(btnShowStats);
-            showStats();
-        });
+        // Setup Click Listeners
+        btnShowLogs.setOnClickListener(v -> showLogsView());
+        btnShowStats.setOnClickListener(v -> showStatsView());
 
         checkPermissionsAndLoad();
+    }
+
+    private void showLogsView() {
+        animateSlider(btnShowLogs);
+        statsContainer.setVisibility(View.GONE);
+        recyclerView.setVisibility(View.VISIBLE);
+    }
+
+    private void showStatsView() {
+        animateSlider(btnShowStats);
+        if (isDataLoaded) {
+            recyclerView.setVisibility(View.GONE);
+            statsContainer.setVisibility(View.VISIBLE);
+            // Re-animate charts for a nice effect when they appear
+            barChart.animateY(1000);
+            pieChart.animateY(1000);
+        } else {
+            // If data isn't loaded yet, load it. The charts will appear when done.
+            checkPermissionsAndLoad();
+        }
     }
 
     private void checkPermissionsAndLoad() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.READ_CALL_LOG, Manifest.permission.READ_CONTACTS},
                     REQUEST_CODE);
@@ -100,26 +140,24 @@ public class MainActivity extends AppCompatActivity {
 
     private void showLoading(boolean isLoading) {
         progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-        recyclerView.setVisibility(isLoading ? View.GONE : View.VISIBLE);
+        recyclerView.setVisibility(isLoading ? View.INVISIBLE : View.VISIBLE);
+        statsContainer.setVisibility(isLoading ? View.INVISIBLE : statsContainer.getVisibility());
     }
 
-    // This is our new background loading method
     private void loadCallLogsInBackground() {
         showLoading(true);
         executor.execute(() -> {
-
+            // Reset counters
             incomingCalls = 0;
             outgoingCalls = 0;
             missedCalls = 0;
 
-            // This code now runs on a background thread
             List<CallLogItem> loadedLogs = new ArrayList<>();
             HashMap<String, ContactStats> loadedStats = new HashMap<>();
-            HashMap<String, String> contactCache = new HashMap<>(); // Cache for contact names
+            HashMap<String, String> contactCache = new HashMap<>();
 
             try (Cursor cursor = getContentResolver().query(
                     CallLog.Calls.CONTENT_URI, null, null, null, CallLog.Calls.DATE + " DESC")) {
-
                 if (cursor == null) return;
 
                 int numberIndex = cursor.getColumnIndex(CallLog.Calls.NUMBER);
@@ -132,31 +170,16 @@ public class MainActivity extends AppCompatActivity {
                     String typeStr = cursor.getString(typeIndex);
                     long dateLong = cursor.getLong(dateIndex);
                     String durationStr = cursor.getString(durationIndex);
-
-                    String name = getContactName(this, number, contactCache); // Use cache
+                    String name = getContactName(this, number, contactCache);
 
                     String type;
                     switch (Integer.parseInt(typeStr)) {
-                        case CallLog.Calls.OUTGOING_TYPE:
-                            type = "Outgoing";
-                            outgoingCalls++;
-                            break;
-                        case CallLog.Calls.INCOMING_TYPE:
-                            type = "Incoming";
-                            incomingCalls++;
-                            break;
-                        case CallLog.Calls.MISSED_TYPE:
-                            type = "Missed";
-                            missedCalls++;
-                            break;
-                        default:
-                            type = "Other";
-                            break;
+                        case CallLog.Calls.INCOMING_TYPE: type = "Incoming"; incomingCalls++; break;
+                        case CallLog.Calls.OUTGOING_TYPE: type = "Outgoing"; outgoingCalls++; break;
+                        case CallLog.Calls.MISSED_TYPE: type = "Missed"; missedCalls++; break;
+                        default: type = "Other"; break;
                     }
-
                     loadedLogs.add(new CallLogItem(name, number, type, dateLong, durationStr));
-
-                    // Update stats
                     int duration = Integer.parseInt(durationStr);
                     loadedStats.computeIfAbsent(number, k -> new ContactStats(name, number)).addCall(duration);
                 }
@@ -168,66 +191,138 @@ public class MainActivity extends AppCompatActivity {
                 callLogList.addAll(loadedLogs);
                 statsMap = loadedStats;
                 adapter.notifyDataSetChanged();
+
+                // Now, setup the charts and the new stats list with the new data
+                setupBarChart(statsMap);
+                setupPieChart(incomingCalls, outgoingCalls, missedCalls);
+                setupStatsRecyclerView(statsMap); // Call the new method
+
+                isDataLoaded = true;
                 showLoading(false);
             });
         });
     }
 
-    private void showStats() {
-        if (statsMap.isEmpty()) {
-            // If stats aren't loaded yet, load everything first, then show stats.
-            //loadCallLogsInBackground();
-            // A better implementation might wait for the load to finish.
-            // But for now, just clicking again after load will work.
-            return;
+    private void setupStatsRecyclerView(HashMap<String, ContactStats> statsMap) {
+        List<CallLogItem> statsList = new ArrayList<>();
+
+        for (ContactStats stats : statsMap.values()) {
+            String statsData = stats.getCount() + "|" + stats.getTotalDuration();
+            statsList.add(new CallLogItem(stats.getName(), stats.getNumber(), "STATS", 0L, statsData));
         }
 
-        Intent intent = new Intent(MainActivity.this, StatisticsActivity.class);
-        intent.putExtra("statsMap", statsMap);
-        intent.putExtra("incomingCount", incomingCalls);
-        intent.putExtra("outgoingCount", outgoingCalls);
-        intent.putExtra("missedCount", missedCalls);
-        startActivity(intent);
+        statsList.sort(Comparator.comparing(CallLogItem::getName));
 
-
-//        callLogList.clear();
-//        for (ContactStats stats : statsMap.values()) {
-//            String number = stats.getNumber(); // You need to add this getter to ContactStats
-//            String name = stats.getName();
-//
-////            String duration = "Calls: " + stats.getCount() + " | Total: " + stats.getTotalDuration() + "s";
-////            callLogList.add(new CallLogItem(name, number, "STATS", 0L, duration));
-//            String statsData = stats.getCount() + "|" + stats.getTotalDuration();
-//            callLogList.add(new CallLogItem(name, number, "STATS", 0L, statsData));
-//        }
-//        adapter.notifyDataSetChanged();
+        CallLogAdapter statsAdapter = new CallLogAdapter(statsList);
+        statsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        statsRecyclerView.setAdapter(statsAdapter);
     }
 
-    // Modified to use a cache
     private String getContactName(Context context, String phoneNumber, HashMap<String, String> cache) {
-        if (cache.containsKey(phoneNumber)) {
-            return cache.get(phoneNumber); // Return from cache if present
-        }
-
-        String name = phoneNumber; // Fallback
+        if (cache.containsKey(phoneNumber)) return cache.get(phoneNumber);
+        String name = phoneNumber;
         Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
-
-        try (Cursor cursor = context.getContentResolver().query(
-                uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null)) {
-
+        try (Cursor cursor = context.getContentResolver().query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
                 name = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.PhoneLookup.DISPLAY_NAME));
             }
         }
-
-        cache.put(phoneNumber, name); // Store result in cache
+        cache.put(phoneNumber, name);
         return name;
     }
 
-    private void animateSlider(View clickedButton){
-        slidingSelector.animate()
-                .x(clickedButton.getX())
-                .setDuration(250) // A quick, smooth animation
-                .start();
+    private void animateSlider(View clickedButton) {
+        slidingSelector.animate().x(clickedButton.getX()).setDuration(250).start();
+    }
+
+    // --- CHART SETUP METHODS ---
+
+    private void setupBarChart(HashMap<String, ContactStats> statsMap) {
+        List<Map.Entry<String, ContactStats>> sortedList = new ArrayList<>(statsMap.entrySet());
+        sortedList.sort((o1, o2) -> Integer.compare(o2.getValue().getTotalDuration(), o1.getValue().getTotalDuration()));
+
+        List<BarEntry> entries = new ArrayList<>();
+        ArrayList<String> labels = new ArrayList<>();
+        int limit = Math.min(sortedList.size(), 5);
+
+        for (int i = 0; i < limit; i++) {
+            Map.Entry<String, ContactStats> entry = sortedList.get(i);
+            entries.add(new BarEntry(limit - 1 - i, entry.getValue().getTotalDuration() / 60f));
+            labels.add(entry.getValue().getName());
+        }
+        Collections.reverse(labels);
+
+        BarDataSet dataSet = new BarDataSet(entries, "Total Call Duration (Minutes)");
+        dataSet.setColors(ColorTemplate.MATERIAL_COLORS);
+        dataSet.setValueTextColor(Color.WHITE);
+        dataSet.setValueTextSize(12f);
+        dataSet.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                return String.format("%.0f min", value);
+            }
+        });
+
+        BarData barData = new BarData(dataSet);
+        barData.setBarWidth(0.6f);
+        styleBarChart(labels);
+        barChart.setData(barData);
+        barChart.invalidate();
+    }
+
+    private void styleBarChart(ArrayList<String> labels) {
+        barChart.getDescription().setEnabled(false);
+        barChart.getLegend().setEnabled(false);
+        barChart.setDrawValueAboveBar(true);
+        barChart.setFitBars(true);
+        XAxis xAxis = barChart.getXAxis();
+        xAxis.setValueFormatter(new IndexAxisValueFormatter(labels));
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(false);
+        xAxis.setGranularity(1f);
+        xAxis.setTextColor(Color.WHITE);
+        xAxis.setTextSize(12f);
+        YAxis leftAxis = barChart.getAxisLeft();
+        leftAxis.setDrawGridLines(false);
+        leftAxis.setTextColor(Color.WHITE);
+        leftAxis.setAxisMinimum(0f);
+        barChart.getAxisRight().setEnabled(false);
+    }
+
+    private void setupPieChart(int incoming, int outgoing, int missed) {
+        ArrayList<PieEntry> entries = new ArrayList<>();
+        entries.add(new PieEntry(incoming, "Incoming"));
+        entries.add(new PieEntry(outgoing, "Outgoing"));
+        entries.add(new PieEntry(missed, "Missed"));
+
+        PieDataSet dataSet = new PieDataSet(entries, "");
+        dataSet.setColors(new int[]{Color.parseColor("#4CAF50"), Color.parseColor("#2196F3"), Color.parseColor("#F44336")});
+        dataSet.setValueTextColor(Color.WHITE);
+        dataSet.setValueTextSize(14f);
+        dataSet.setSliceSpace(3f);
+
+        PieData pieData = new PieData(dataSet);
+        pieData.setValueFormatter(new PercentFormatter(pieChart));
+        stylePieChart();
+        pieChart.setData(pieData);
+        pieChart.invalidate();
+    }
+
+    private void stylePieChart() {
+        pieChart.setUsePercentValues(true);
+        pieChart.getDescription().setEnabled(false);
+        pieChart.setDrawHoleEnabled(true);
+        pieChart.setHoleColor(Color.TRANSPARENT);
+        pieChart.setTransparentCircleRadius(61f);
+        pieChart.setHoleRadius(58f);
+        pieChart.setCenterText("Call Types");
+        pieChart.setCenterTextColor(Color.WHITE);
+        pieChart.setCenterTextSize(18f);
+        Legend legend = pieChart.getLegend();
+        legend.setTextColor(Color.WHITE);
+        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
+        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
+        legend.setOrientation(Legend.LegendOrientation.VERTICAL);
+        legend.setDrawInside(false);
     }
 }
