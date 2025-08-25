@@ -153,6 +153,8 @@ public class CallLogAdapter extends RecyclerView.Adapter<CallLogAdapter.ViewHold
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy hh:mm a", Locale.getDefault());
         return dateFormat.format(callTime.getTime());
 
+
+
 //        now.add(Calendar.DAY_OF_YEAR, -1);
 //        if (now.get(Calendar.YEAR) == callTime.get(Calendar.YEAR) &&
 //                now.get(Calendar.DAY_OF_YEAR) == callTime.get(Calendar.DAY_OF_YEAR)) {

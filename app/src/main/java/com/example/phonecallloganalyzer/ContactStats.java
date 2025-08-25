@@ -1,6 +1,8 @@
 package com.example.phonecallloganalyzer;
 
-public class ContactStats {
+import java.io.Serializable;
+
+public class ContactStats implements Serializable {
     private String name;
     private String number; // <-- 1. Add field for the number
     private int count;
