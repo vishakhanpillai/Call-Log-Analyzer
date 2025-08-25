@@ -3,10 +3,10 @@ public class CallLogItem {
     private String name;
     private String number;
     private String type;
-    private String date;
+    private long date;
     private String duration;
 
-    public CallLogItem(String name, String number, String type, String date, String duration) {
+    public CallLogItem(String name, String number, String type, long date, String duration) {
         this.name = name;
         this.number = number;
         this.type = type;
@@ -17,6 +17,6 @@ public class CallLogItem {
     public String getName() { return name; }
     public String getNumber() { return number; }
     public String getType() { return type; }
-    public String getDate() { return date; }
+    public long getDate() { return date; }
     public String getDuration() { return duration; }
 }

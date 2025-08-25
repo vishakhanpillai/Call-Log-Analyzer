@@ -45,8 +45,8 @@ public class MainActivity extends AppCompatActivity {
         adapter = new CallLogAdapter(callLogList);
         recyclerView.setAdapter(adapter);
 
-        btnShowLogs = findViewById(R.id.btnShowLogs);
-        btnShowStats = findViewById(R.id.btnShowStats);
+        btnShowLogs = findViewById(R.id.showLogsButton);
+        btnShowStats = findViewById(R.id.showStatsButton);
 
         btnShowLogs.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -139,15 +139,11 @@ public class MainActivity extends AppCompatActivity {
                         default: type = "OTHER"; break;
                     }
 
-                    // Date
-                    String formattedDate = DateFormat.getDateTimeInstance()
-                            .format(new Date(Long.parseLong(dateStr)));
-
-                    // Contact name (safe)
+                    long dateLong = Long.parseLong(dateStr);
                     String name = getContactName(this, number);
 
                     // Add to list
-                    callLogList.add(new CallLogItem(name, number, type, formattedDate, durationStr));
+                    callLogList.add(new CallLogItem(name, number, type, dateLong, durationStr));
 
                     // Update stats
                     int dur = 0;
@@ -173,10 +169,10 @@ public class MainActivity extends AppCompatActivity {
         for (String num : statsMap.keySet()) {
             ContactStats s = statsMap.get(num);
             String callType = "STATS";
-            String callDate = "-";
+            //String callDate = "-";
             String callDuration = "Calls: " + s.getCount() + " | Total Duration: " + s.getTotalDuration() + " sec";
 
-            callLogList.add(new CallLogItem(s.getName(), num, callType, callDate, callDuration));
+            callLogList.add(new CallLogItem(s.getName(), num, callType, 0L, callDuration));
         }
 
         adapter.notifyDataSetChanged();

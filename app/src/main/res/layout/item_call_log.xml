@@ -1,53 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="12dp"
-    android:background="@android:color/white">
+    android:layout_margin="10dp"
+    card_view:cardCornerRadius="14dp"
+    card_view:cardElevation="6dp"
+    android:backgroundTint="#121212"
+    android:foreground="?attr/selectableItemBackground">
 
-    <!-- Contact Name -->
-    <TextView
-        android:id="@+id/nameText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Name"
-        android:textColor="@android:color/black"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:layout_marginBottom="4dp" />
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="14dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <!-- Phone Number -->
-    <TextView
-        android:id="@+id/numberText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Number"
-        android:textColor="@android:color/darker_gray"
-        android:textSize="14sp" />
+        <!-- Contact Name -->
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="John Doe"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:ellipsize="end"
+            android:singleLine="true" />
 
-    <!-- Call Type -->
-    <TextView
-        android:id="@+id/typeText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Type"
-        android:textSize="14sp" />
+        <!-- Number -->
+        <TextView
+            android:id="@+id/tvNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+91 9876543210"
+            android:textSize="14sp"
+            android:textColor="#B0BEC5"
+            android:paddingBottom="8dp" />
 
-    <!-- Call Date -->
-    <TextView
-        android:id="@+id/dateText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Date"
-        android:textSize="14sp" />
+        <!-- Call Details Row -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:weightSum="3">
 
-    <!-- Call Duration -->
-    <TextView
-        android:id="@+id/durationText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Duration"
-        android:textSize="14sp" />
+            <!-- Call Type -->
+            <TextView
+                android:id="@+id/tvType"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Incoming"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="#4CAF50" />
 
-</LinearLayout>
+            <!-- Date -->
+            <TextView
+                android:id="@+id/tvDate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="12 Aug, 10:30 AM"
+                android:textSize="14sp"
+                android:textColor="#9E9E9E" />
+
+            <!-- Duration -->
+            <TextView
+                android:id="@+id/tvDuration"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:text="2 min"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="#FF9800" />
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
