@@ -2,6 +2,7 @@ package com.example.phonecallloganalyzer;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -44,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     // Handler to post results back to the main thread
     private final Handler handler = new Handler(Looper.getMainLooper());
+
+    private int incomingCalls = 0, outgoingCalls = 0, missedCalls = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +107,11 @@ public class MainActivity extends AppCompatActivity {
     private void loadCallLogsInBackground() {
         showLoading(true);
         executor.execute(() -> {
+
+            incomingCalls = 0;
+            outgoingCalls = 0;
+            missedCalls = 0;
+
             // This code now runs on a background thread
             List<CallLogItem> loadedLogs = new ArrayList<>();
             HashMap<String, ContactStats> loadedStats = new HashMap<>();
@@ -129,10 +137,21 @@ public class MainActivity extends AppCompatActivity {
 
                     String type;
                     switch (Integer.parseInt(typeStr)) {
-                        case CallLog.Calls.OUTGOING_TYPE: type = "Outgoing"; break;
-                        case CallLog.Calls.INCOMING_TYPE: type = "Incoming"; break;
-                        case CallLog.Calls.MISSED_TYPE:   type = "Missed";   break;
-                        default:                          type = "Other";    break;
+                        case CallLog.Calls.OUTGOING_TYPE:
+                            type = "Outgoing";
+                            outgoingCalls++;
+                            break;
+                        case CallLog.Calls.INCOMING_TYPE:
+                            type = "Incoming";
+                            incomingCalls++;
+                            break;
+                        case CallLog.Calls.MISSED_TYPE:
+                            type = "Missed";
+                            missedCalls++;
+                            break;
+                        default:
+                            type = "Other";
+                            break;
                     }
 
                     loadedLogs.add(new CallLogItem(name, number, type, dateLong, durationStr));
@@ -157,23 +176,31 @@ public class MainActivity extends AppCompatActivity {
     private void showStats() {
         if (statsMap.isEmpty()) {
             // If stats aren't loaded yet, load everything first, then show stats.
-            loadCallLogsInBackground();
+            //loadCallLogsInBackground();
             // A better implementation might wait for the load to finish.
             // But for now, just clicking again after load will work.
             return;
         }
 
-        callLogList.clear();
-        for (ContactStats stats : statsMap.values()) {
-            String number = stats.getNumber(); // You need to add this getter to ContactStats
-            String name = stats.getName();
+        Intent intent = new Intent(MainActivity.this, StatisticsActivity.class);
+        intent.putExtra("statsMap", statsMap);
+        intent.putExtra("incomingCount", incomingCalls);
+        intent.putExtra("outgoingCount", outgoingCalls);
+        intent.putExtra("missedCount", missedCalls);
+        startActivity(intent);
 
-//            String duration = "Calls: " + stats.getCount() + " | Total: " + stats.getTotalDuration() + "s";
-//            callLogList.add(new CallLogItem(name, number, "STATS", 0L, duration));
-            String statsData = stats.getCount() + "|" + stats.getTotalDuration();
-            callLogList.add(new CallLogItem(name, number, "STATS", 0L, statsData));
-        }
-        adapter.notifyDataSetChanged();
+
+//        callLogList.clear();
+//        for (ContactStats stats : statsMap.values()) {
+//            String number = stats.getNumber(); // You need to add this getter to ContactStats
+//            String name = stats.getName();
+//
+////            String duration = "Calls: " + stats.getCount() + " | Total: " + stats.getTotalDuration() + "s";
+////            callLogList.add(new CallLogItem(name, number, "STATS", 0L, duration));
+//            String statsData = stats.getCount() + "|" + stats.getTotalDuration();
+//            callLogList.add(new CallLogItem(name, number, "STATS", 0L, statsData));
+//        }
+//        adapter.notifyDataSetChanged();
     }
 
     // Modified to use a cache
