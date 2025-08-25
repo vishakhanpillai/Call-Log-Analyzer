@@ -5,62 +5,94 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:fitsSystemWindows="true"
-    android:background="#121212"
-    android:padding="16dp">
+    android:background="#121212">
 
-    <!-- Title Bar -->
+    <!-- 1. Elegant Title Bar for a premium feel -->
     <TextView
         android:id="@+id/appTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="📞 Call Analyzer"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/white"
+        android:text="Call Log Analyzer"
+        android:textSize="28sp"
+        android:fontFamily="sans-serif-light"
+        android:textColor="#FFFFFF"
         android:gravity="center"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp" />
+        android:paddingVertical="32dp"
+        android:textStyle="bold"
+        />
 
-    <!-- Buttons Row -->
-    <LinearLayout
+    <!-- 2. A 'Control Panel' using ConstraintLayout for the animation -->
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/button_container_background"
+        android:padding="6dp">
 
-        <Button
+        <!-- The Sliding Selector View (now defaults to the left button) -->
+        <View
+            android:id="@+id/slidingSelector"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/selector_background"
+            app:layout_constraintTop_toTopOf="@id/showLogsButton"
+            app:layout_constraintBottom_toBottomOf="@id/showLogsButton"
+            app:layout_constraintStart_toStartOf="@id/showLogsButton"
+            app:layout_constraintEnd_toEndOf="@id/showLogsButton" />
+
+        <!-- Logs Button (now on the left) -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/showLogsButton"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="48dp"
-            android:text="Show Logs"
-            android:textColor="@android:color/white"
-            android:backgroundTint="#448AFF"
-            android:layout_marginEnd="8dp"
+            android:layout_height="52dp"
+            android:text="Logs"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
             android:fontFamily="sans-serif-medium"
-            android:gravity="center" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/showStatsButton" />
 
-        <Button
+        <!-- Statistics Button (now on the right) -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/showStatsButton"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="48dp"
-            android:text="Show Stats"
-            android:textColor="@android:color/white"
-            android:backgroundTint="#00E676"
-            android:layout_marginStart="8dp"
+            android:layout_height="52dp"
+            android:text="Statistics"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
             android:fontFamily="sans-serif-medium"
-            android:gravity="center" />
-    </LinearLayout>
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/showLogsButton"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Content Area remains the same -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingBottom="16dp" />
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingTop="8dp"
+            android:paddingHorizontal="6dp"/>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+    </FrameLayout>
 
 </LinearLayout>

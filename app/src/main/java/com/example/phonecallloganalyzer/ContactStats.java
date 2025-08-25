@@ -2,11 +2,14 @@ package com.example.phonecallloganalyzer;
 
 public class ContactStats {
     private String name;
+    private String number; // <-- 1. Add field for the number
     private int count;
     private int totalDuration;
 
-    public ContactStats(String name) {
+    // 2. Update the constructor to accept the number
+    public ContactStats(String name, String number) {
         this.name = name;
+        this.number = number; // <-- Store the number
         this.count = 0;
         this.totalDuration = 0;
     }
@@ -16,9 +19,11 @@ public class ContactStats {
         totalDuration += duration;
     }
 
+    // --- Getters ---
     public String getName() { return name; }
     public int getCount() { return count; }
     public int getTotalDuration() { return totalDuration; }
+
+    // 3. This is the "getter" method that was missing
+    public String getNumber() { return number; }
 }
-
-
