@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -35,7 +36,6 @@ import com.github.mikephil.charting.data.PieEntry;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.github.mikephil.charting.formatter.ValueFormatter;
-import com.github.mikephil.charting.utils.ColorTemplate;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -253,9 +253,19 @@ public class MainActivity extends AppCompatActivity {
         Collections.reverse(labels);
 
         BarDataSet dataSet = new BarDataSet(entries, "Total Call Duration (Minutes)");
-        dataSet.setColors(ColorTemplate.MATERIAL_COLORS);
+
+        // **NEW**: A professional, cohesive color palette
+        final int[] BAR_CHART_COLORS = {
+                Color.rgb(0, 227, 150),
+                Color.rgb(0, 184, 212),
+                Color.rgb(0, 145, 234),
+                Color.rgb(48, 79, 254),
+                Color.rgb(98, 0, 234)
+        };
+        dataSet.setColors(BAR_CHART_COLORS);
         dataSet.setValueTextColor(Color.WHITE);
         dataSet.setValueTextSize(12f);
+        dataSet.setValueTypeface(Typeface.DEFAULT_BOLD);
         dataSet.setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
@@ -275,6 +285,10 @@ public class MainActivity extends AppCompatActivity {
         barChart.getLegend().setEnabled(false);
         barChart.setDrawValueAboveBar(true);
         barChart.setFitBars(true);
+
+        // **EDIT**: Add extra space on the right side for the value text
+        barChart.setExtraRightOffset(35f);
+
         XAxis xAxis = barChart.getXAxis();
         xAxis.setValueFormatter(new IndexAxisValueFormatter(labels));
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
@@ -291,15 +305,33 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupPieChart(int incoming, int outgoing, int missed) {
         ArrayList<PieEntry> entries = new ArrayList<>();
-        entries.add(new PieEntry(incoming, "Incoming"));
-        entries.add(new PieEntry(outgoing, "Outgoing"));
-        entries.add(new PieEntry(missed, "Missed"));
+        if (incoming > 0) entries.add(new PieEntry(incoming, "Incoming"));
+        if (outgoing > 0) entries.add(new PieEntry(outgoing, "Outgoing"));
+        if (missed > 0) entries.add(new PieEntry(missed, "Missed"));
 
         PieDataSet dataSet = new PieDataSet(entries, "");
-        dataSet.setColors(new int[]{Color.parseColor("#4CAF50"), Color.parseColor("#2196F3"), Color.parseColor("#F44336")});
+
+        // **NEW**: A professional, cohesive color palette
+        final int[] PIE_CHART_COLORS = {
+                Color.rgb(0, 227, 150), // Teal
+                Color.rgb(0, 184, 212), // Cyan
+                Color.rgb(255, 64, 129)  // Pink
+        };
+        dataSet.setColors(PIE_CHART_COLORS);
         dataSet.setValueTextColor(Color.WHITE);
-        dataSet.setValueTextSize(14f);
+        dataSet.setValueTextSize(16f);
+        dataSet.setValueTypeface(Typeface.DEFAULT_BOLD);
         dataSet.setSliceSpace(3f);
+        dataSet.setValueLinePart1OffsetPercentage(80.f);
+
+        // **EDIT**: Make the connector lines shorter
+        dataSet.setValueLinePart1Length(0.3f);
+        dataSet.setValueLinePart2Length(0.3f);
+
+        // **EDIT**: Change the connector line color to white
+        dataSet.setValueLineColor(Color.WHITE);
+
+        dataSet.setYValuePosition(PieDataSet.ValuePosition.OUTSIDE_SLICE);
 
         PieData pieData = new PieData(dataSet);
         pieData.setValueFormatter(new PercentFormatter(pieChart));
@@ -318,11 +350,10 @@ public class MainActivity extends AppCompatActivity {
         pieChart.setCenterText("Call Types");
         pieChart.setCenterTextColor(Color.WHITE);
         pieChart.setCenterTextSize(18f);
+        pieChart.setEntryLabelColor(Color.WHITE);
+        pieChart.setEntryLabelTextSize(12f);
+
         Legend legend = pieChart.getLegend();
-        legend.setTextColor(Color.WHITE);
-        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
-        legend.setOrientation(Legend.LegendOrientation.VERTICAL);
-        legend.setDrawInside(false);
+        legend.setEnabled(false); // We use labels on the slices, so the legend is redundant
     }
 }
