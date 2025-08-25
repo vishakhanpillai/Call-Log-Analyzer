@@ -12,12 +12,13 @@
         android:id="@+id/appTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Call Insights"
+        android:text="Call Log Analyzer"
         android:textSize="28sp"
         android:fontFamily="sans-serif-light"
         android:textColor="#FFFFFF"
         android:gravity="center"
-        android:paddingVertical="32dp" />
+        android:paddingVertical="32dp"
+        android:textStyle="bold"/>
 
     <!-- Control Panel with Sliding Selector -->
     <androidx.constraintlayout.widget.ConstraintLayout
